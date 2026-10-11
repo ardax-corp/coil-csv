@@ -26,18 +26,15 @@ let text = stringify(rows);
 | Path | Role |
 |------|------|
 | `src/csv.hy` | `Csv`, `CsvError`, parse/stringify |
-| `coil.toml` | `[package] name = "csv"` so `use csv::{…}` resolves |
+| `coil.toml` | spool manifest (`[package] name = "csv"`); coil does not read it |
 
 ## Consume
 
-Sibling checkout, or a git dep plus `coil.lock` pin. See [docs/consume.md](docs/consume.md).
-
-```toml
-[dependencies]
-csv = { git = "https://github.com/ardax-corp/coil-csv.git" }
+```bash
+spool add csv --git https://github.com/ardax-corp/coil-csv.git --rev <commit SHA>
 ```
 
-`{ git }` is the parseable form. `version` is optional schema, not a tag. The pin is `coil.lock` `rev` + `content_hash`. The compiler does not follow path deps; put `../coil-csv/src` on `[module] roots`.
+No tags yet, so pin a commit. Without spool, pass `--root ../coil-csv/src` to `coil`. See [docs/consume.md](docs/consume.md).
 
 ## License
 
