@@ -1,5 +1,6 @@
 // RFC 4180 parse/stringify: quotes, commas in quotes, empty fields, round-trip.
 // Test bodies use assert's string error; CSV Results are matched, not `?`.
+use tests::assert;
 use csv::{parse, stringify, CsvError};
 
 fn must_parse(string s) -> Vec<Vec<string>> {
@@ -68,56 +69,56 @@ fn is_invalid(Result<Vec<Vec<string>>, CsvError> r) -> bool {
 
 test("simple comma fields") {
     let rows = must_parse("a,b,c");
-    assert(len(rows) == 1, "one record")?;
-    assert(eq_row(rows[0], row3("a", "b", "c")), "a,b,c")?;
+    assert!(len(rows) == 1, "one record");
+    assert!(eq_row(rows[0], row3("a", "b", "c")), "a,b,c");
 }
 
 test("quoted field") {
     let rows = must_parse("\"hello\"");
-    assert(len(rows) == 1 && len(rows[0]) == 1, "one field")?;
-    assert(rows[0][0] == "hello", "quoted hello")?;
+    assert!(len(rows) == 1 && len(rows[0]) == 1, "one field");
+    assert!(rows[0][0] == "hello", "quoted hello");
 }
 
 test("comma inside quotes") {
     let rows = must_parse("\"a,b\",c");
-    assert(eq_row(rows[0], row2("a,b", "c")), "comma in quotes")?;
+    assert!(eq_row(rows[0], row2("a,b", "c")), "comma in quotes");
 }
 
 test("escaped quotes") {
     let rows = must_parse("\"a\"\"b\"");
-    assert(len(rows) == 1 && rows[0][0] == "a\"b", "doubled quote")?;
+    assert!(len(rows) == 1 && rows[0][0] == "a\"b", "doubled quote");
 }
 
 test("empty fields") {
     let rows = must_parse("a,,c");
-    assert(eq_row(rows[0], row3("a", "", "c")), "middle empty")?;
+    assert!(eq_row(rows[0], row3("a", "", "c")), "middle empty");
     let ends = must_parse(",b,");
-    assert(eq_row(ends[0], row3("", "b", "")), "edge empty")?;
+    assert!(eq_row(ends[0], row3("", "b", "")), "edge empty");
 }
 
 test("lf and crlf records") {
     let lf = must_parse("a,b\nc,d");
-    assert(len(lf) == 2, "lf two records")?;
-    assert(eq_row(lf[0], row2("a", "b")) && eq_row(lf[1], row2("c", "d")), "lf rows")?;
+    assert!(len(lf) == 2, "lf two records");
+    assert!(eq_row(lf[0], row2("a", "b")) && eq_row(lf[1], row2("c", "d")), "lf rows");
     let crlf = must_parse("a,b\r\nc,d");
-    assert(len(crlf) == 2, "crlf two records")?;
-    assert(eq_row(crlf[0], row2("a", "b")) && eq_row(crlf[1], row2("c", "d")), "crlf rows")?;
+    assert!(len(crlf) == 2, "crlf two records");
+    assert!(eq_row(crlf[0], row2("a", "b")) && eq_row(crlf[1], row2("c", "d")), "crlf rows");
 }
 
 test("quoted newline in field") {
     let rows = must_parse("\"a\nb\",c");
-    assert(len(rows) == 1, "one record")?;
-    assert(eq_row(rows[0], row2("a\nb", "c")), "newline in quotes")?;
+    assert!(len(rows) == 1, "one record");
+    assert!(eq_row(rows[0], row2("a\nb", "c")), "newline in quotes");
 }
 
 test("empty input") {
     let rows = must_parse("");
-    assert(len(rows) == 0, "no records")?;
+    assert!(len(rows) == 0, "no records");
 }
 
 test("trailing newline does not add a row") {
     let rows = must_parse("a,b\n");
-    assert(len(rows) == 1 && eq_row(rows[0], row2("a", "b")), "one record")?;
+    assert!(len(rows) == 1 && eq_row(rows[0], row2("a", "b")), "one record");
 }
 
 test("round-trip quotes commas empty") {
@@ -129,31 +130,31 @@ test("round-trip quotes commas empty") {
     src.push(q);
     let encoded = must_stringify(src);
     let back = must_parse(encoded);
-    assert(eq_rows(src, back), "parse(stringify) rows")?;
+    assert!(eq_rows(src, back), "parse(stringify) rows");
 }
 
 test("stringify quotes comma and quote") {
     let rows: Vec<Vec<string>> = Vec::new();
     rows.push(row2("a,b", "c\"d"));
     let s = must_stringify(rows);
-    assert(s == "\"a,b\",\"c\"\"d\"", "quoted encode")?;
+    assert!(s == "\"a,b\",\"c\"\"d\"", "quoted encode");
 }
 
 test("unterminated quote is CsvError") {
-    assert(is_invalid(parse("\"abc")), "unterminated")?;
+    assert!(is_invalid(parse("\"abc")), "unterminated");
 }
 
 test("unescaped quote is CsvError") {
-    assert(is_invalid(parse("a\"b")), "bare quote")?;
+    assert!(is_invalid(parse("a\"b")), "bare quote");
 }
 
 test("error is not panic") {
     let r = parse("\"open");
-    assert(match r {
+    assert!(match r {
         Result::Ok(_) => false,
         Result::Err(e) => match e {
             CsvError::Invalid { line, column, message } => line == 1 && column == 1 && message != "",
             default => false,
         },
-    }, "Invalid at 1,1")?;
+    }, "Invalid at 1,1");
 }

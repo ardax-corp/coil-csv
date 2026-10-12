@@ -1,4 +1,5 @@
 // Csv::parse / Csv::stringify (same as free functions).
+use tests::assert;
 use csv::{Csv};
 
 fn row2(string a, string b) -> Vec<string> {
@@ -27,6 +28,6 @@ test("Csv methods") {
         Result::Ok(v) => v,
         Result::Err(_) => panic "Csv::parse",
     };
-    assert(eq_row(rows[0], row2("x", "y")), "method parse")?;
-    assert(Csv::stringify(rows) == "x,y", "method stringify")?;
+    assert!(eq_row(rows[0], row2("x", "y")), "method parse");
+    assert!(Csv::stringify(rows) == "x,y", "method stringify");
 }
