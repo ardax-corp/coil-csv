@@ -25,7 +25,7 @@ fn bytes_to_s(Vec<byte> b, int line, int column) -> Result<string, CsvError> {
 
 fn append_bytes(Vec<byte> out, Vec<byte> b) {
     let i = 0;
-    while i < len(b) {
+    while i < b.len() {
         out.push(b[i]);
         i = i + 1;
     }
@@ -49,11 +49,11 @@ impl Parser {
     }
 
     pub fn at_end() -> bool {
-        return self.i >= len(self.bytes);
+        return self.i >= self.bytes.len();
     }
 
     fn bump() {
-        if self.i >= len(self.bytes) {
+        if self.i >= self.bytes.len() {
             return;
         }
         let c = self.bytes[self.i];
@@ -192,7 +192,7 @@ impl Parser {
 fn field_needs_quote(string s) -> bool {
     let b = to_bytes(s);
     let i = 0;
-    while i < len(b) {
+    while i < b.len() {
         let c = b[i];
         if c == "," {
             return true;
@@ -219,7 +219,7 @@ fn append_field(Vec<byte> out, string s) {
     }
     out.push("\"" as byte);
     let i = 0;
-    while i < len(b) {
+    while i < b.len() {
         let c = b[i];
         if c == "\"" {
             out.push("\"" as byte);
@@ -243,14 +243,14 @@ impl Csv {
     pub static fn stringify(Vec<Vec<string>> rows) -> string {
         let out: Vec<byte> = Vec::new();
         let r = 0;
-        while r < len(rows) {
+        while r < rows.len() {
             if r > 0 {
                 out.push("\r" as byte);
                 out.push("\n" as byte);
             }
             let row = rows[r];
             let c = 0;
-            while c < len(row) {
+            while c < row.len() {
                 if c > 0 {
                     out.push("," as byte);
                 }
