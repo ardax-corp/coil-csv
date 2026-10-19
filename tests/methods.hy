@@ -10,11 +10,11 @@ fn row2(string a, string b) -> Vec<string> {
 }
 
 fn eq_row(Vec<string> a, Vec<string> b) -> bool {
-    if len(a) != len(b) {
+    if a.len() != b.len() {
         return false;
     }
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         if a[i] != b[i] {
             return false;
         }

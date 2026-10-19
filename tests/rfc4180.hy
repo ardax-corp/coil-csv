@@ -15,11 +15,11 @@ fn must_stringify(Vec<Vec<string>> rows) -> string {
 }
 
 fn eq_row(Vec<string> a, Vec<string> b) -> bool {
-    if len(a) != len(b) {
+    if a.len() != b.len() {
         return false;
     }
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         if a[i] != b[i] {
             return false;
         }
@@ -29,11 +29,11 @@ fn eq_row(Vec<string> a, Vec<string> b) -> bool {
 }
 
 fn eq_rows(Vec<Vec<string>> a, Vec<Vec<string>> b) -> bool {
-    if len(a) != len(b) {
+    if a.len() != b.len() {
         return false;
     }
     let i = 0;
-    while i < len(a) {
+    while i < a.len() {
         if !eq_row(a[i], b[i]) {
             return false;
         }
@@ -69,13 +69,13 @@ fn is_invalid(Result<Vec<Vec<string>>, CsvError> r) -> bool {
 
 test("simple comma fields") {
     let rows = must_parse("a,b,c");
-    assert!(len(rows) == 1, "one record");
+    assert!(rows.len() == 1, "one record");
     assert!(eq_row(rows[0], row3("a", "b", "c")), "a,b,c");
 }
 
 test("quoted field") {
     let rows = must_parse("\"hello\"");
-    assert!(len(rows) == 1 && len(rows[0]) == 1, "one field");
+    assert!(rows.len() == 1 && rows[0].len() == 1, "one field");
     assert!(rows[0][0] == "hello", "quoted hello");
 }
 
@@ -86,7 +86,7 @@ test("comma inside quotes") {
 
 test("escaped quotes") {
     let rows = must_parse("\"a\"\"b\"");
-    assert!(len(rows) == 1 && rows[0][0] == "a\"b", "doubled quote");
+    assert!(rows.len() == 1 && rows[0][0] == "a\"b", "doubled quote");
 }
 
 test("empty fields") {
@@ -98,27 +98,27 @@ test("empty fields") {
 
 test("lf and crlf records") {
     let lf = must_parse("a,b\nc,d");
-    assert!(len(lf) == 2, "lf two records");
+    assert!(lf.len() == 2, "lf two records");
     assert!(eq_row(lf[0], row2("a", "b")) && eq_row(lf[1], row2("c", "d")), "lf rows");
     let crlf = must_parse("a,b\r\nc,d");
-    assert!(len(crlf) == 2, "crlf two records");
+    assert!(crlf.len() == 2, "crlf two records");
     assert!(eq_row(crlf[0], row2("a", "b")) && eq_row(crlf[1], row2("c", "d")), "crlf rows");
 }
 
 test("quoted newline in field") {
     let rows = must_parse("\"a\nb\",c");
-    assert!(len(rows) == 1, "one record");
+    assert!(rows.len() == 1, "one record");
     assert!(eq_row(rows[0], row2("a\nb", "c")), "newline in quotes");
 }
 
 test("empty input") {
     let rows = must_parse("");
-    assert!(len(rows) == 0, "no records");
+    assert!(rows.len() == 0, "no records");
 }
 
 test("trailing newline does not add a row") {
     let rows = must_parse("a,b\n");
-    assert!(len(rows) == 1 && eq_row(rows[0], row2("a", "b")), "one record");
+    assert!(rows.len() == 1 && eq_row(rows[0], row2("a", "b")), "one record");
 }
 
 test("round-trip quotes commas empty") {
