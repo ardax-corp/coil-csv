@@ -177,3 +177,10 @@ test("error position after a multi-line quoted field") {
     let (l3, c3) = error_at("\"a\n\nb\r\ncc\"\"d\",e\nf,\"unterminated\nx");
     assert!(l3 == 5 && c3 == 3, "unterminated field reported where it starts");
 }
+
+test("long fields around quotes") {
+    let rows = must_parse("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN,\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN\"\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN\"\nabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN");
+    assert!(rows.len() == 2, "two records");
+    assert!(eq_row(rows[0], row2("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN")), "long fields");
+    assert!(rows[1].len() == 1 && rows[1][0] == "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN", "last field");
+}
