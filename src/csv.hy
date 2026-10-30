@@ -132,12 +132,14 @@ impl Parser {
         let start_col = self.col;
         let b = self.bytes;
         let start = self.i;
+        let out: Vec<byte> = Vec::new();
         let i = start;
         while i < b.len() {
             let c = b[i];
             if c == "," || c == "\n" || c == "\r" || c == "\"" {
                 break;
             }
+            out.push(c);
             i = i + 1;
         }
         self.advance_to(i);
@@ -145,12 +147,6 @@ impl Parser {
             if b[i] == "\"" {
                 raise invalid(self.line, self.col, "unescaped quote in unquoted field");
             }
-        }
-        let out: Vec<byte> = Vec::with_capacity(i - start);
-        let k = start;
-        while k < i {
-            out.push(b[k]);
-            k = k + 1;
         }
         return bytes_to_s(out, start_line, start_col)?;
     }
@@ -162,18 +158,14 @@ impl Parser {
         let b = self.bytes;
         let out: Vec<byte> = Vec::new();
         while true {
-            let start = self.i;
-            let i = start;
+            let i = self.i;
             while i < b.len() {
-                if b[i] == "\"" {
+                let c = b[i];
+                if c == "\"" {
                     break;
                 }
+                out.push(c);
                 i = i + 1;
-            }
-            let k = start;
-            while k < i {
-                out.push(b[k]);
-                k = k + 1;
             }
             self.advance_to(i);
             if self.at_end() {
