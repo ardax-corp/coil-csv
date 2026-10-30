@@ -104,26 +104,53 @@ impl Parser {
         raise invalid(self.line, self.col, "expected record separator");
     }
 
+    // Moves the cursor to `j` (at most the input's end), keeping `line` and
+    // `col` as a `bump` per byte would.
+    fn advance_to(int j) {
+        let b = self.bytes;
+        let i = self.i;
+        let lines = 0;
+        let last = -1;
+        while i < j {
+            if b[i] == "\n" {
+                lines = lines + 1;
+                last = i;
+            }
+            i = i + 1;
+        }
+        if lines > 0 {
+            self.line = self.line + lines;
+            self.col = j - last;
+        } else {
+            self.col = self.col + (j - self.i);
+        }
+        self.i = j;
+    }
+
     fn parse_unquoted() -> Result<string, CsvError> {
         let start_line = self.line;
         let start_col = self.col;
-        let out: Vec<byte> = Vec::new();
-        while !self.at_end() {
-            let c = self.cur();
-            if c == "," {
+        let b = self.bytes;
+        let start = self.i;
+        let i = start;
+        while i < b.len() {
+            let c = b[i];
+            if c == "," || c == "\n" || c == "\r" || c == "\"" {
                 break;
             }
-            if c == "\n" {
-                break;
-            }
-            if c == "\r" {
-                break;
-            }
-            if c == "\"" {
+            i = i + 1;
+        }
+        self.advance_to(i);
+        if i < b.len() {
+            if b[i] == "\"" {
                 raise invalid(self.line, self.col, "unescaped quote in unquoted field");
             }
-            out.push(c);
-            self.bump();
+        }
+        let out: Vec<byte> = Vec::with_capacity(i - start);
+        let k = start;
+        while k < i {
+            out.push(b[k]);
+            k = k + 1;
         }
         return bytes_to_s(out, start_line, start_col)?;
     }
@@ -132,23 +159,33 @@ impl Parser {
         let start_line = self.line;
         let start_col = self.col;
         self.bump();
+        let b = self.bytes;
         let out: Vec<byte> = Vec::new();
         while true {
+            let start = self.i;
+            let i = start;
+            while i < b.len() {
+                if b[i] == "\"" {
+                    break;
+                }
+                i = i + 1;
+            }
+            let k = start;
+            while k < i {
+                out.push(b[k]);
+                k = k + 1;
+            }
+            self.advance_to(i);
             if self.at_end() {
                 raise invalid(start_line, start_col, "unterminated quoted field");
             }
-            let c = self.cur();
-            if c == "\"" {
-                self.bump();
-                if self.peek_eq("\"") {
-                    out.push("\"" as byte);
-                    self.bump();
-                    continue;
-                }
-                break;
-            }
-            out.push(c);
             self.bump();
+            if self.peek_eq("\"") {
+                out.push("\"" as byte);
+                self.bump();
+                continue;
+            }
+            break;
         }
         return bytes_to_s(out, start_line, start_col)?;
     }
