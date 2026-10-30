@@ -158,3 +158,22 @@ test("error is not panic") {
         },
     }, "Invalid at 1,1");
 }
+
+fn error_at(string s) -> (int, int) {
+    return match parse(s) {
+        Result::Ok(_) => (0, 0),
+        Result::Err(e) => match e {
+            CsvError::Invalid { line, column, message } => (line, column),
+            default => (0, 0),
+        },
+    };
+}
+
+test("error position after a multi-line quoted field") {
+    let (l1, c1) = error_at("\"a\nbc\",x\"y");
+    assert!(l1 == 2 && c1 == 6, "quote after a two-line field at 2,6");
+    let (l2, c2) = error_at("a,b\r\n\"q\nq\",z\"");
+    assert!(l2 == 3 && c2 == 5, "quote after CRLF and a two-line field at 3,5");
+    let (l3, c3) = error_at("\"a\n\nb\r\ncc\"\"d\",e\nf,\"unterminated\nx");
+    assert!(l3 == 5 && c3 == 3, "unterminated field reported where it starts");
+}
