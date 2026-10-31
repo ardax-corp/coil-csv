@@ -2,9 +2,31 @@
 // No native, no dload, no FFI. Rows are `Vec<Vec<string>>`.
 use string::{from_bytes, to_bytes};
 
-/// Parse/stringify failure. `line` and `column` are 1-based (column counts bytes in the line).
+/// Why `parse` rejected its input.
+///
+/// `line` and `column` are 1-based. `column` counts bytes from the start of the
+/// line, not characters, so a field after multi-byte text sits further right
+/// than it looks.
+///
+/// # Examples
+///
+/// ```
+/// use csv::{parse, CsvError};
+/// # use tests::assert;
+/// let ok = match parse("a,b\n\"open") {
+///     Result::Ok(_) => false,
+///     Result::Err(e) => match e {
+///         CsvError::Invalid { line, column, message } => line == 2 && column == 1 && message == "unterminated quoted field",
+///         default => false,
+///     },
+/// };
+/// assert!(ok);
+/// ```
 enum CsvError {
+    /// Malformed CSV: an unterminated quoted field, a quote inside an unquoted
+    /// field, or text after a closing quote. `message` says which.
     Invalid { line: int, column: int, message: string },
+    /// A field whose bytes are not valid UTF-8, at the field's first byte.
     Utf8 { line: int, column: int },
 }
 
@@ -38,7 +60,21 @@ class Parser {
     pub col: int,
 }
 
-/// RFC 4180 codec. `parse` / `stringify` are also free functions.
+/// The RFC 4180 codec, as static methods.
+///
+/// `Csv::parse` and `Csv::stringify` are the same functions as the free
+/// `parse` and `stringify`; use whichever reads better. There is no instance to
+/// create.
+///
+/// # Examples
+///
+/// ```
+/// use csv::{Csv};
+/// # use tests::assert;
+/// let rows = Csv::parse("x,y").unwrap_or(Vec::new());
+/// assert!(rows.len() == 1 && rows[0][1] == "y");
+/// assert!(Csv::stringify(rows) == "x,y");
+/// ```
 class Csv {
     _unused: int,
 }
@@ -74,7 +110,7 @@ impl Parser {
         return self.bytes[self.i];
     }
 
-    /// Coil `&&` / `||` evaluate both sides; never pair `at_end` with `cur()` in one expr.
+    // Coil `&&` / `||` evaluate both sides; never pair `at_end` with `cur()` in one expr.
     fn peek_eq(byte c) -> bool {
         if self.at_end() {
             return false;
@@ -262,13 +298,36 @@ fn append_field(Vec<byte> out, string s) {
 }
 
 impl Csv {
-    /// Parse RFC 4180 CSV. Comma separator; quoted fields; `""` escape; `\n` or `\r\n` records.
+    /// Parses RFC 4180 CSV text into rows of fields. Same as the free `parse`.
+    ///
+    /// See `parse` for the accepted syntax and the errors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use csv::{Csv};
+    /// # use tests::assert;
+    /// let rows = Csv::parse("name,qty\r\napple,3\r\n").unwrap_or(Vec::new());
+    /// assert!(rows.len() == 2);
+    /// assert!(rows[1][0] == "apple" && rows[1][1] == "3");
+    /// ```
     pub static fn parse(string s) -> Result<Vec<Vec<string>>, CsvError> {
         let p = Parser::new(to_bytes(s));
         return p.parse_all()?;
     }
 
-    /// Encode rows as RFC 4180 CSV (`\r\n` between records). Quotes fields that need it.
+    /// Encodes rows as RFC 4180 CSV text. Same as the free `stringify`.
+    ///
+    /// See `stringify` for the quoting rules.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use csv::{Csv};
+    /// # use tests::assert;
+    /// let rows: Vec<Vec<string>> = [["a", "b"], ["1", "2"]];
+    /// assert!(Csv::stringify(rows) == "a,b\r\n1,2");
+    /// ```
     pub static fn stringify(Vec<Vec<string>> rows) -> string {
         let out: Vec<byte> = Vec::new();
         let r = 0;
@@ -295,12 +354,55 @@ impl Csv {
     }
 }
 
-/// Parse RFC 4180 CSV text into rows of fields.
+/// Parses RFC 4180 CSV text into rows of fields.
+///
+/// Fields are separated by `,` and records by `\n` or `\r\n` (a lone `\r`
+/// also ends a record). A field wrapped in `"` may hold commas, line breaks and
+/// `""` (one literal quote). One trailing line break is ignored, empty input
+/// gives no rows, and an empty line in the middle is a row with one empty
+/// field. Rows may have different lengths; nothing checks them against the
+/// first row, and there is no header handling (the header is just `rows[0]`).
+///
+/// Returns `CsvError::Invalid` for an unterminated quoted field, a `"` inside
+/// an unquoted field, or anything but `,` or a line break after a closing
+/// quote. It never panics on bad input.
+///
+/// # Examples
+///
+/// ```
+/// use csv::{parse};
+/// # use tests::assert;
+/// let rows = parse("name,note\nada,\"likes \"\"math\"\", a lot\"\n").unwrap_or(Vec::new());
+/// assert!(rows.len() == 2);
+/// assert!(rows[0][0] == "name");
+/// assert!(rows[1][1] == "likes \"math\", a lot");
+///
+/// assert!(parse("").is_ok());
+/// assert!(parse("a\"b").is_err());
+/// ```
 fn parse(string s) -> Result<Vec<Vec<string>>, CsvError> {
     return Csv::parse(s)?;
 }
 
-/// Encode rows as RFC 4180 CSV text. Infallible for `string` fields.
+/// Encodes rows as RFC 4180 CSV text.
+///
+/// Fields are joined with `,` and records with `\r\n`, with no line break
+/// after the last record. A field that holds `,`, `"`, `\r` or `\n` is wrapped
+/// in quotes, with each `"` doubled; other fields are written as they are.
+/// `parse(stringify(rows))` gives `rows` back, except that a single row with
+/// one empty field encodes to `""` and parses back to no rows.
+///
+/// # Examples
+///
+/// ```
+/// use csv::{parse, stringify};
+/// # use tests::assert;
+/// let rows: Vec<Vec<string>> = [["id", "text"], ["1", "a, \"b\""]];
+/// let text = stringify(rows);
+/// assert!(text == "id,text\r\n1,\"a, \"\"b\"\"\"");
+/// let back = parse(text).unwrap_or(Vec::new());
+/// assert!(back[1][1] == "a, \"b\"");
+/// ```
 fn stringify(Vec<Vec<string>> rows) -> string {
     return Csv::stringify(rows);
 }
