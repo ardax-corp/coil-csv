@@ -1,6 +1,6 @@
 # Consuming coil-csv
 
-This package is `csv`. `use csv::{parse, stringify, Csv, CsvError}` resolves from `src/csv.hy`. The repo is `https://github.com/ardax-corp/coil-csv.git`. There is no native/FFI dependency.
+This package is `csv`. `use csv::{parse, stringify, Csv, CsvError}` resolves from `src/csv.coil`. The repo is `https://github.com/ardax-corp/coil-csv.git`. There is no native/FFI dependency.
 
 ## Depend on it
 
@@ -16,12 +16,12 @@ Without spool, clone this repo next to your project and pass the roots yourself.
 
 ```bash
 git clone https://github.com/ardax-corp/coil-csv.git ../coil-csv
-coil --root ../coil-stdlib/src --root ../coil-csv/src main.hy
+coil --root ../coil-stdlib/src --root ../coil-csv/src main.coil
 ```
 
 ## Call parse / stringify
 
-Signatures and `///` docs with examples are in [`src/csv.hy`](../src/csv.hy). Call patterns are in [`tests/rfc4180.hy`](../tests/rfc4180.hy).
+Signatures and `///` docs with examples are in [`src/csv.coil`](../src/csv.coil). Call patterns are in [`tests/rfc4180.coil`](../tests/rfc4180.coil).
 
 ```coil
 use csv::{parse, stringify, Csv, CsvError};
